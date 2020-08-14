@@ -73,14 +73,21 @@
   "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\""
   (mapconcat (lambda (fn) (funcall fn)) fluent-prepend-compilation-commands " && "))
 
-
-;; (defun fluent-switch-two-commands ()
-;;   "Select two commands from the execution list and switch them."
-;;   (interactive)
-;;   (let ((first (ido-completing-read "first: " fluent-command))
-;;         (second (ido-completing-read "second: " fluent-command)))
-;;     (nthcar (seq-position fluent-command first) fluent-command)
-;;     (message "%s <-> %s" first second)))
+(require 'cl-lib)
+(defun fluent-switch-two-commands ()
+  "Select two commands from the execution list and switch them."
+  (interactive)
+  (let ((first-pos
+	 (seq-position fluent-command
+		       (ido-completing-read "first: " fluent-command)))
+	(second-pos
+	 (seq-position fluent-command
+		       (ido-completing-read "second: " fluent-command))))
+    (setq tmp (seq-elt fluent-command first-pos))
+    (setf (seq-elt fluent-command first-pos) (seq-elt fluent-command second-pos))
+    (setf (seq-elt fluent-command second-pos) tmp)
+    ))
+    ;; (message "%s <-> %s" first second)))
 
 ;; (defvar fluent-commands-history '())
 ;; (add-to-list 'fluent-commands-history "ssh {build-host} \"{commands}\"")
@@ -119,14 +126,12 @@
         compilation-scroll-output t
         compilation-auto-jump-to-first-error '()))
 
-(use-package ansi-color
-  :config
-  (defun user/buildsystem-colorize-compilation-buffer ()
-    (read-only-mode '())
-    (ansi-color-apply-on-region compilation-filter-start (point))
-    (read-only-mode t))
-  (add-hook 'compilation-filter-hook 'user/buildsystem-colorize-compilation-buffer)
-  )
+(require 'ansi-color)
+(defun fluent-colorize-compilation-buffer ()
+  (read-only-mode '())
+  (ansi-color-apply-on-region compilation-filter-start (point))
+  (read-only-mode t))
+(add-hook 'compilation-filter-hook 'fluent-colorize-compilation-buffer)
 
 (fluent--set-compile-flags)
 
