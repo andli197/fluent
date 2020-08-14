@@ -51,7 +51,7 @@
 (defvar fluent--last-command '() "Last executed commands.")
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
-  (fluent--generate-compilation-command)
+  (setq full-command (fluent--generate-compilation-command))
   (fluent-message "compiling '%s'" full-command)
   (setq compilation-always-kill t)
   (compile full-command))
@@ -68,7 +68,7 @@
 	(seq-remove
 	 (lambda (str) (or (eq str "") (eq str nil)))
 	 full-command-list))
-  (setq full-command (mapconcat 'identity non-empty-commands " && ")))
+  (mapconcat 'identity non-empty-commands " && "))
 
 (defvar fluent-prepend-compilation-commands '()
   "Commands called and append result from before the current `fluent-command'")
