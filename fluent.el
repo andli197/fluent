@@ -51,6 +51,13 @@
 (defvar fluent--last-command '() "Last executed commands.")
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
+  (fluent--generate-compilation-command)
+  (fluent-message "compiling '%s'" full-command)
+  (setq compilation-always-kill t)
+  (compile full-command))
+
+(defun fluent--generate-compilation-command ()
+  "Generates the compilation command and assign to `fluent--last-command'"
   (setq prepend-command "")
   (if fluent-prepend-compilation-commands
       (setq prepend-command (user/compile-append-to-command (fluent-evaluate-pre-compilation-commands))))
@@ -61,16 +68,13 @@
 	(seq-remove
 	 (lambda (str) (or (eq str "") (eq str nil)))
 	 full-command-list))
-  (setq full-command (mapconcat 'identity non-empty-commands " && "))
-  (fluent-message "compiling '%s'" full-command)
-  (setq compilation-always-kill t)
-  (compile full-command))
+  (setq full-command (mapconcat 'identity non-empty-commands " && ")))
 
 (defvar fluent-prepend-compilation-commands '()
   "Commands called and append result from before the current `fluent-command'")
 
 (defun fluent-evaluate-pre-compilation-commands ()
-  "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\""
+  "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" and prepend to the execution."
   (mapconcat (lambda (fn) (funcall fn)) fluent-prepend-compilation-commands " && "))
 
 (require 'cl-lib)
@@ -87,7 +91,6 @@
     (setf (seq-elt fluent-command first-pos) (seq-elt fluent-command second-pos))
     (setf (seq-elt fluent-command second-pos) tmp)
     ))
-    ;; (message "%s <-> %s" first second)))
 
 ;; (defvar fluent-commands-history '())
 ;; (add-to-list 'fluent-commands-history "ssh {build-host} \"{commands}\"")
@@ -118,7 +121,7 @@
   "Invoke the remopilation."
   (interactive)
   (fluent--set-compile-flags)
-  (fluent-compile-and-log fluent--last-command))
+  (fluent--compile-and-log fluent--last-command))
 
 (defun fluent--set-compile-flags ()
   "Set the compilation flags to the desired behavior."
@@ -135,15 +138,13 @@
 
 (fluent--set-compile-flags)
 
-;; (global-set-key (kbd "<f5>") 'fluent-recompile)
-;; (global-set-key (kbd "C-<f5>") 'fluent-add-command-with-input)
-;; (global-set-key (kbd "<f6>") 'fluent-execute)
-;; (global-set-key (kbd "C-<f6>") 'fluent-execute-single-command)
-;; (global-set-key (kbd "<f7>") 'fluent-modify)
-;; (global-set-key (kbd "C-<f7>") 'fluent-remove-command)
-;; (global-set-key (kbd "<f8>") 'fluent-clear)
-
-;; (provide 'fluent)
-;; ;;; fluent ends here
+(global-set-key (kbd "<f5>") 'fluent-recompile)
+(global-set-key (kbd "C-<f5>") 'fluent-compile)
+(global-set-key (kbd "<f6>") 'fluent-add-interactive)
+(global-set-key (kbd "C-<f6>") 'fluent-switch-two-commands)
+(global-set-key (kbd "<f7>") 'fluent-modify)
+(global-set-key (kbd "C-<f7>") 'fluent-remove-command)
+(global-set-key (kbd "<f8>") 'fluent-clear)
 
 (provide 'fluent)
+;;; fluent ends here
