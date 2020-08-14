@@ -77,7 +77,6 @@
   "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" and prepend to the execution."
   (mapconcat (lambda (fn) (funcall fn)) fluent-prepend-compilation-commands " && "))
 
-(require 'cl-lib)
 (defun fluent-switch-two-commands ()
   "Select two commands from the execution list and switch them."
   (interactive)
