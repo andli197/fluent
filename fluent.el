@@ -54,7 +54,7 @@
   (setq prepend-command "")
   (if fluent-prepend-compilation-commands
       (setq prepend-command (user/compile-append-to-command (fluent-evaluate-pre-compilation-commands))))
-  (setq parsed-arguments (user/compile-append-to-command arguments))
+  (setq parsed-arguments (user/compile-append-to-command (reverse arguments)))
   (setq fluent--last-command arguments)
   (setq full-command-list (list prepend-command parsed-arguments))
   (setq non-empty-commands
