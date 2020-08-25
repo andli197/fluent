@@ -77,6 +77,7 @@
   "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" and prepend to the execution."
   (mapconcat (lambda (fn) (funcall fn)) fluent-prepend-compilation-commands " && "))
 
+(require 'cl-lib)
 (defun fluent-switch-two-commands ()
   "Select two commands from the execution list and switch them."
   (interactive)
@@ -86,10 +87,7 @@
 	(second-pos
 	 (seq-position fluent-command
 		       (ido-completing-read "second: " fluent-command))))
-    (setq tmp (seq-elt fluent-command first-pos))
-    (setf (seq-elt fluent-command first-pos) (seq-elt fluent-command second-pos))
-    (setf (seq-elt fluent-command second-pos) tmp)
-    ))
+    (cl-rotatef (seq-elt fluent-command first-pos) (seq-elt fluent-command second-pos))))
 
 ;; (defvar fluent-commands-history '())
 ;; (add-to-list 'fluent-commands-history "ssh {build-host} \"{commands}\"")
