@@ -73,23 +73,28 @@
 (defvar fluent--last-command '() "Last executed commands.")
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
-  (setq full-command (fluent--generate-compilation-command))
+  (setq full-command (fluent--generate-full-compilation-command arguments))
+  (fluent-message "compiling '%s'" full-command)
+  (setq compilation-always-kill t)
+  (compile full-command))
+
+(defun fluent--generate-full-compilation-command (arguments)
+  "Generates the full compilation command with remote host."
+  (setq full-command (fluent--generate-compilation-command arguments))
   (if fluent--remote-compilation
       (setq full-command
 	    (concat "ssh "
 		    fluent--remote-build-host
 		    " \"" full-command "\"")))
-  (fluent-message "compiling '%s'" full-command)
-  (setq compilation-always-kill t)
-  (compile full-command))
+  full-command)
 
-(defun fluent--generate-compilation-command ()
+(defun fluent--generate-compilation-command (arguments)
   "Generates the compilation command and assign to `fluent--last-command'"
   (setq prepend-command "")
   (if fluent-prepend-compilation-commands
       (setq prepend-command (user/compile-append-to-command (fluent-evaluate-pre-compilation-commands))))
-  (setq parsed-arguments (user/compile-append-to-command (reverse arguments)))
   (setq fluent--last-command arguments)
+  (setq parsed-arguments (user/compile-append-to-command (reverse arguments)))
   (setq full-command-list (list prepend-command parsed-arguments))
   (setq non-empty-commands
 	(seq-remove
@@ -102,7 +107,7 @@
 
 (defun fluent-evaluate-pre-compilation-commands ()
   "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" and prepend to the execution."
-  (mapconcat (lambda (fn) (funcall fn)) fluent-prepend-compilation-commands " && "))
+  (mapconcat (lambda (fn) (funcall fn)) (reverse fluent-prepend-compilation-commands) " && "))
 
 (require 'cl-lib)
 (defun fluent-switch-two-commands ()
@@ -114,7 +119,9 @@
 	(second-pos
 	 (seq-position fluent-command
 		       (ido-completing-read "second: " fluent-command))))
-    (cl-rotatef (seq-elt fluent-command first-pos) (seq-elt fluent-command second-pos))))
+    (cl-rotatef
+     (seq-elt fluent-command first-pos)
+     (seq-elt fluent-command second-pos))))
 
 ;; (defvar fluent-commands-history '())
 ;; (add-to-list 'fluent-commands-history "ssh {build-host} \"{commands}\"")
@@ -171,6 +178,10 @@
 (global-set-key (kbd "<f8>") 'fluent-clear)
 (global-set-key (kbd "C-c r t") 'fluent-remote-compile)
 (global-set-key (kbd "C-c r b") 'fluent-set-remote-host-interative)
+
+(eval-when-compile
+  (load-file "test/fluent-test.el")
+  (ert "fluent"))
 
 (provide 'fluent)
 ;;; fluent ends here
