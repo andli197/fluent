@@ -48,10 +48,41 @@
   (interactive)
   (fluent--compile-and-log fluent-command))
 
+(defvar fluent--remote-compilation '() "Flag for compiling remote or local.")
+(defun fluent-remote-compile ()
+  "Switch between remote- and local compilation."
+  (interactive)
+  (if fluent--remote-compilation
+      (progn
+	(setq fluent--remote-compilation '())
+	(fluent-message "Turning remote compilation OFF"))
+    (progn
+      (setq fluent--remote-compilation t)
+      (fluent-message "Turning remote compilation ON"))))
+
+(defvar fluent--remote-build-host "localhost" "Machine for remote compilation.")
+(defun fluent-set-remote-host (host)
+  "Set the remote build machine to HOST"
+  (interactive)
+  (setq fluent--remote-build-host host)
+  (fluent-message "Remote host set to \"%s\"" host))
+
+(defvar fluent--remote-build-host-history '() "History for the build hosts.")
+(defun fluent-set-remote-host-interative ()
+  "Prompt user for remote host and set it."
+  (interactive)
+  (let ((host (read-string "host: " (or (car fluent--remote-build-host-history) "localhost") 'fluent--remote-build-host-history)))
+    (fluent-set-remote-host host)))
+
 (defvar fluent--last-command '() "Last executed commands.")
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
   (setq full-command (fluent--generate-compilation-command))
+  (if fluent--remote-compilation
+      (setq full-command
+	    (concat "ssh "
+		    fluent--remote-build-host
+		    " \"" full-command "\"")))
   (fluent-message "compiling '%s'" full-command)
   (setq compilation-always-kill t)
   (compile full-command))
@@ -142,6 +173,8 @@
 (global-set-key (kbd "<f7>") 'fluent-modify)
 (global-set-key (kbd "C-<f7>") 'fluent-remove-command)
 (global-set-key (kbd "<f8>") 'fluent-clear)
+(global-set-key (kbd "C-c r t") 'fluent-remote-compile)
+(global-set-key (kbd "C-c r b") 'fluent-set-remote-host-interative)
 
 (provide 'fluent)
 ;;; fluent ends here
