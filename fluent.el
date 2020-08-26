@@ -52,9 +52,9 @@
 (defun fluent-remote-compile ()
   "Switch between remote- and local compilation."
   (interactive)
-(setq fluent--remote-compilation (not fluent--remote-compilation))
-(setq status (if fluent--remote-compilation "ON" "OFF"))
-(fluent-message "Turning remote compilation %s" status))
+  (setq fluent--remote-compilation (not fluent--remote-compilation))
+  (setq status (if fluent--remote-compilation "ON" "OFF"))
+  (fluent-message "Turning remote compilation %s" status))
 
 (defvar fluent--remote-build-host "localhost" "Machine for remote compilation.")
 (defun fluent-set-remote-host (host)
