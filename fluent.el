@@ -38,7 +38,7 @@
 (defun fluent-modify ()
   "Select command in `fluent-command' and modify it."
   (interactive)
-  (let* ((selected-command (ido-completing-read "select command to modify: " fluent-command))
+  (let* ((selected-command (ido-completing-read "modify: " fluent-command))
          (new-command (read-string "modification: " selected-command)))
     (setcar (nthcdr (seq-position fluent-command selected-command) fluent-command) new-command)
     (fluent-message "command modified: %s -> %s" selected-command new-command)))
