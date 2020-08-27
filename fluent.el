@@ -70,6 +70,12 @@
   (let ((host (read-string "host: " (or (car fluent--remote-build-host-history) "localhost") 'fluent--remote-build-host-history)))
     (fluent-set-remote-host host)))
 
+(defun fluent-compile-single-command ()
+  "Prompt user for command in command list and execute it."
+  (interactive)
+  (let ((selected-command (ido-completing-read "execute: " fluent-command)))
+    (fluent--compile-and-log (list selected-command))))
+
 (defvar fluent--last-command '() "Last executed commands.")
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
@@ -90,10 +96,8 @@
 
 (defun fluent--generate-compilation-command (arguments)
   "Generates the compilation command and assign to `fluent--last-command'"
-  (setq prepend-command "")
-  (if fluent-prepend-compilation-commands
-      (setq prepend-command (user/compile-append-to-command (fluent-evaluate-pre-compilation-commands))))
   (setq fluent--last-command arguments)
+  (setq prepend-command (fluent-evaluate-pre-compilation-commands))
   (setq parsed-arguments (user/compile-append-to-command (reverse arguments)))
   (setq full-command-list (list prepend-command parsed-arguments))
   (setq non-empty-commands
@@ -106,7 +110,7 @@
   "Commands called and append result from before the current `fluent-command'")
 
 (defun fluent-evaluate-pre-compilation-commands ()
-  "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" and prepend to the execution."
+  "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" to prepend to the execution."
   (mapconcat (lambda (fn) (funcall fn)) (reverse fluent-prepend-compilation-commands) " && "))
 
 (require 'cl-lib)
@@ -178,6 +182,7 @@
 (global-set-key (kbd "<f8>") 'fluent-clear)
 (global-set-key (kbd "C-c r t") 'fluent-remote-compile)
 (global-set-key (kbd "C-c r b") 'fluent-set-remote-host-interative)
+(global-set-key (kbd "C-c s x") 'fluent-compile-single-command)
 
 (eval-when-compile
   (load-file "test/fluent-test.el")
