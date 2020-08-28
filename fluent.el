@@ -98,7 +98,7 @@
   "Generates the compilation command and assign to `fluent--last-command'"
   (setq fluent--last-command arguments)
   (setq prepend-command (fluent-evaluate-pre-compilation-commands))
-  (setq parsed-arguments (user/compile-append-to-command (reverse arguments)))
+  (setq parsed-arguments (mapconcat 'identity (reverse arguments) " && "))
   (setq full-command-list (list prepend-command parsed-arguments))
   (setq non-empty-commands
 	(seq-remove
