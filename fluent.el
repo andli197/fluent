@@ -70,6 +70,33 @@
   (let ((host (read-string "host: " (or (car fluent--remote-build-host-history) "localhost") 'fluent--remote-build-host-history)))
     (fluent-set-remote-host host)))
 
+(defvar fluent--lisp-expression-finder-regexp "{\\(.+?\\)}")
+(defun fluent--get-all-elisp-expressions-from-string (command)
+  (save-match-data
+    (let ((pos 0) matches)
+      (while (string-match fluent--lisp-expression-finder-regexp command pos)
+        (push (match-string 0 command) matches)
+        (setq pos (match-end 0)))
+      matches)))
+
+(defun fluent-evaluate-elisp-commands-and-replace-in-string (string)
+  "Locate all places with \"{}\" in the STRING and evaluate it as elisp and replace its value with the original value in the string"
+  (let ((expressions (fluent--get-all-elisp-expressions-from-string string)))
+    (seq-do
+     (lambda (expression)
+       (let* ((elisp-value
+	       (eval
+		(read
+		 (format "%s"
+			 (substring expression 1 (- (length expression) 1)))))))
+       (setq string
+	     (replace-regexp-in-string
+	      (regexp-quote expression)
+	      elisp-value
+	      string))))
+     expressions))
+  string)
+
 (defun fluent-compile-single-command ()
   "Prompt user for command in command list and execute it."
   (interactive)
@@ -92,7 +119,7 @@
 	    (concat "ssh "
 		    fluent--remote-build-host
 		    " \"" full-command "\"")))
-  full-command)
+  (fluent-evaluate-elisp-commands-and-replace-in-string full-command))
 
 (defun fluent--generate-compilation-command (arguments)
   "Generates the compilation command and assign to `fluent--last-command'"

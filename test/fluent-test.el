@@ -93,5 +93,89 @@
     (fluent--generate-full-compilation-command '("c" "b" "a"))))
   (should (equal fluent--last-command '("c" "b" "a"))))
 
+(ert-deftest fluent--get-all-elisp-expressions-from-string ()
+  (fluent--default-reset)
+  (should
+   (equal
+    (fluent--get-all-elisp-expressions-from-string "")
+    '()))
+  (should
+   (equal
+    (fluent--get-all-elisp-expressions-from-string "ls -la")
+    '()))
+  (should
+   (equal
+    (fluent--get-all-elisp-expressions-from-string "{foobar}")
+    '("{foobar}")))
+  (should
+   (equal
+    (seq-difference
+     (fluent--get-all-elisp-expressions-from-string "{foo}{bar}")
+     '("{bar}" "{foo}"))
+    '())))
+
+(setq test-variable "variable value")
+(defun test-function () "function value")
+
+(ert-deftest fluent-evaluate-elisp-commands-and-replace-in-string ()
+  (fluent--default-reset)
+  (should
+   (equal (fluent-evaluate-elisp-commands-and-replace-in-string "")
+	  ""))
+  (should
+   (equal (fluent-evaluate-elisp-commands-and-replace-in-string "foobar")
+	  "foobar"))
+  (should
+   (equal
+    (fluent-evaluate-elisp-commands-and-replace-in-string "{test-variable}")
+    "variable value"))
+  (should
+   (equal
+    (fluent-evaluate-elisp-commands-and-replace-in-string "{(test-function)}")
+    "function value"))
+  (should
+   (equal
+    (fluent-evaluate-elisp-commands-and-replace-in-string
+     "{(test-function)} and {test-variable}")
+    "function value and variable value"))
+  (should
+   (equal
+    (fluent-evaluate-elisp-commands-and-replace-in-string
+     "{(string-join (list (test-function) test-variable) \", \")}")
+    "function value, variable value"))
+  )
+
+(defvar test-tmp "first")
+(defun test-mutable-function () (format "function: %s" test-tmp))
+(defun uptime-hook () "uptime")
+(defvar test-host "192.168.0.1")
+(defun remote-build-host () (format "%s" test-host))
+
+(ert-deftest fluent-compile-accepts-lisp-functions-and-variables-and-evaluates-it-at-compilation ()
+  (fluent--default-reset)
+  (push 'uptime-hook fluent-prepend-compilation-commands)
+  (setq test-tmp "first")
+  (should
+   (equal
+    (fluent--generate-full-compilation-command '("{(test-mutable-function)}"))
+    "uptime && function: first"))
+  (setq test-tmp "second")
+  (should
+   (equal
+    (fluent--generate-full-compilation-command '("{(test-mutable-function)}"))
+    "uptime && function: second"))
+  (should
+   (equal
+    (fluent--generate-full-compilation-command '("{test-tmp}"))
+    "uptime && second"))
+  (fluent-set-remote-host "{(remote-build-host)}")
+  (setq fluent--remote-compilation t)
+  (should
+   (equal
+    (fluent--generate-full-compilation-command '("{test-tmp}"))
+    "ssh 192.168.0.1 \"uptime && second\""))
+  )
+
+
 (provide 'fluent-test)
 ;;; fluent-test ends here
