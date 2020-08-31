@@ -1,7 +1,23 @@
-;;; fluent --- Small framework for adding commands to be executed later
+;;; fluent --- Small framework for executing commands using compile
+
+;; Author: Andreas Lindblad
+;; Keywords: extensions, tools, compile
+;; URL: http://github.com/andli197/fluent
+;; Emacs: GNU Emacs 24 (or later)
+;; Package-Requires: ((cl-lib "0.3"))
+;; Version: 0.1.0
+
 ;;; Commentary:
 
-;;; Code:
+;; Small tool for executing compile on a list of commands
+
+;; ## Usage
+;; `C-c r t' : Toggle remote compile option
+;; `C-c r b' : Manually set remote compilation host
+;; `C-c s x' : Compile single command from command list
+;; `C-c s s' : Toggle single command execution. Tells the system not to add commands to the execution list but execute them direct.
+
+;; Code:
 (defvar fluent-command '() "List of commands to be executed.")
 
 (require 'compile)
@@ -9,12 +25,17 @@
 
 (defun fluent-message (str &rest vars)
   "Display a fluent status message."
-  (message (apply #'format (concat "fluent [%s]: " str) (cons (current-time-string) vars))))
+  (message (apply #'format (concat "fluent [%s]: " str)
+		  (cons (current-time-string)
+			vars))))
 
 (defun fluent-add (command)
   "Add the COMMAND to the fluent execution command list."
-  (fluent-message "command \"%s\" added to execution list." command)
-  (push command fluent-command))
+  (if fluent--single-command-execution
+      (fluent--compile-and-log (list command))
+    (progn
+      (fluent-message "command \"%s\" added to execution list." command)
+      (push command fluent-command))))
 
 (defvar fluent-add-interactive-history '() "History for the interactive add.")
 (defun fluent-add-interactive ()
@@ -49,7 +70,7 @@
   (fluent--compile-and-log fluent-command))
 
 (defvar fluent--remote-compilation '() "Flag for compiling remote or local.")
-(defun fluent-remote-compile ()
+(defun fluent-toggle-remote-compile ()
   "Switch between remote- and local compilation."
   (interactive)
   (setq fluent--remote-compilation (not fluent--remote-compilation))
@@ -69,6 +90,14 @@
   (interactive)
   (let ((host (read-string "host: " (or (car fluent--remote-build-host-history) "localhost") 'fluent--remote-build-host-history)))
     (fluent-set-remote-host host)))
+
+(defvar fluent--single-command-execution '() "Flag for executing command direct or not.")
+(defun fluent-toggle-single-command-execution ()
+  "Switch between single command execution and building full command before execution."
+  (interactive)
+  (setq fluent--single-command-execution (not fluent--single-command-execution))
+  (setq status (if fluent--single-command-execution "ON" "OFF"))
+  (fluent-message "Turning single command execution %s" status))
 
 (defvar fluent--lisp-expression-finder-regexp "{\\(.+?\\)}")
 (defun fluent--get-all-elisp-expressions-from-string (command)
@@ -207,9 +236,10 @@
 (global-set-key (kbd "<f7>") 'fluent-modify)
 (global-set-key (kbd "C-<f7>") 'fluent-remove-command)
 (global-set-key (kbd "<f8>") 'fluent-clear)
-(global-set-key (kbd "C-c r t") 'fluent-remote-compile)
+(global-set-key (kbd "C-c r t") 'fluent-toggle-remote-compile)
 (global-set-key (kbd "C-c r b") 'fluent-set-remote-host-interative)
 (global-set-key (kbd "C-c s x") 'fluent-compile-single-command)
+(global-set-key (kbd "C-c s s") 'fluent-toggle-single-command-execution)
 
 (eval-when-compile
   (load-file "test/fluent-test.el")

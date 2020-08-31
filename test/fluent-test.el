@@ -13,6 +13,7 @@
 	fluent--remote-compilation '()
 	fluent--remote-build-host '()
 	fluent-prepend-compilation-commands '()
+	fluent--single-command-execution '()
 	))
 
 (ert-deftest fluent-add--can-add-custom-command-to-execution-list ()
@@ -30,11 +31,11 @@
   (fluent-clear)
   (should (= (length fluent-command) 0)))
 
-(ert-deftest fluent-remote-compile--can-toggle-remote-compilation ()
+(ert-deftest fluent-toggle-remote-compile--can-toggle-remote-compilation ()
   (fluent--default-reset)
-  (fluent-remote-compile)
+  (fluent-toggle-remote-compile)
   (should (eq fluent--remote-compilation t))
-  (fluent-remote-compile)
+  (fluent-toggle-remote-compile)
   (should (eq fluent--remote-compilation '())))
 
 (ert-deftest fluent--remote-build-host--can-be-custom-set ()
@@ -176,6 +177,10 @@
     "ssh 192.168.0.1 \"uptime && second\""))
   )
 
+(ert-deftest fluent-execute-commands-direct-option ()
+  (fluent--default-reset)
+  (fluent-toggle-single-command-execution)
+  (should (equal fluent--single-command-execution t)))
 
 (provide 'fluent-test)
 ;;; fluent-test ends here
