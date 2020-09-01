@@ -1,5 +1,5 @@
-# fluent
-Simple model for building commands in emacs to be executed using compile.
+# fluent-mode
+Simple minor-mode model for building commands in emacs to be executed using compile.
 
 # features
 * Add commands to be appended in front of the execution list, both programmatic and interactive
