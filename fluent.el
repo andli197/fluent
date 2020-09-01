@@ -2,7 +2,7 @@
 
 ;; Author: Andreas Lindblad
 ;; Keywords: extensions, tools, compile
-;; URL: http://github.com/andli197/fluent
+;; URL: http://github.com/andli197/fluent-mode
 ;; Emacs: GNU Emacs 24 (or later)
 ;; Package-Requires: ((cl-lib "0.3"))
 ;; Version: 0.1.0
