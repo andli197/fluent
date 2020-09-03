@@ -6,15 +6,17 @@
 ;;; Code:
 ;; (require 'fluent-execution)
 
+(require 'subr-x)
+
 (defun fluent--default-reset ()
   (setq fluent-command '()
-	fluent-add-interactive-history '()
-	fluent--last-command '()
-	fluent--remote-compilation '()
-	fluent--remote-build-host '()
-	fluent-prepend-compilation-commands '()
-	fluent--single-command-execution '()
-	))
+        fluent-add-interactive-history '()
+        fluent--last-command '()
+        fluent--remote-compilation '()
+        fluent--remote-build-host '()
+        fluent-prepend-compilation-commands '()
+        fluent--single-command-execution '()
+        ))
 
 (ert-deftest fluent-add--can-add-custom-command-to-execution-list ()
   (fluent--default-reset)
@@ -122,10 +124,10 @@
   (fluent--default-reset)
   (should
    (equal (fluent-evaluate-elisp-commands-and-replace-in-string "")
-	  ""))
+          ""))
   (should
    (equal (fluent-evaluate-elisp-commands-and-replace-in-string "foobar")
-	  "foobar"))
+          "foobar"))
   (should
    (equal
     (fluent-evaluate-elisp-commands-and-replace-in-string "{test-variable}")

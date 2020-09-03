@@ -75,29 +75,28 @@
   "Minor mode for fluent execution model."
   :lighter " fluent"
   :keymap (let ((map (make-sparse-keymap)))
-	    ;;; IDE-style keybindings
-	    ;; (define-key map (kbd "<f5>") 'fluent-compile)
-	    ;; (define-key map (kbd "C-<f5>") 'fluent-recompile)
-	    ;; (define-key map (kbd "<f6>") 'fluent-add-interactive)
-	    ;; (define-key map (kbd "C-<f6>") 'fluent-switch-two-commands)
-	    ;; (define-key map (kbd "<f7>") 'fluent-modify)
-	    ;; (define-key map (kbd "C-<f7>") 'fluent-remove-command)
-	    ;; (define-key map (kbd "<f8>") 'fluent-clear)
-	    
-	    (define-key map (kbd "C-c c x") 'fluent-clear)
-	    (define-key map (kbd "C-c c c") 'fluent-compile)
-	    (define-key map (kbd "C-c c r") 'fluent-recompile)
-	    (define-key map (kbd "C-c c a") 'fluent-add-interactive)
-	    (define-key map (kbd "C-c m m") 'fluent-modify)
-	    (define-key map (kbd "C-c m s") 'fluent-switch-two-commands)
-	    (define-key map (kbd "C-c m r") 'fluent-remove-command)
-	    
-	    (define-key map (kbd "C-c r t") 'fluent-toggle-remote-compile)
-	    (define-key map (kbd "C-c r b") 'fluent-set-remote-host-interative)
-	    (define-key map (kbd "C-c s x") 'fluent-compile-single-command)
-	    (define-key map (kbd "C-c s s") 'fluent-toggle-single-command-execution)
-	    
-	    map)
+            ;;; IDE-style keybindings
+            ;; (define-key map (kbd "<f5>") 'fluent-compile)
+            ;; (define-key map (kbd "C-<f5>") 'fluent-recompile)
+            ;; (define-key map (kbd "<f6>") 'fluent-add-interactive)
+            ;; (define-key map (kbd "C-<f6>") 'fluent-switch-two-commands)
+            ;; (define-key map (kbd "<f7>") 'fluent-modify)
+            ;; (define-key map (kbd "C-<f7>") 'fluent-remove-command)
+            ;; (define-key map (kbd "<f8>") 'fluent-clear)
+
+            (define-key map (kbd "C-c c x") 'fluent-clear)
+            (define-key map (kbd "C-c c c") 'fluent-compile)
+            (define-key map (kbd "C-c c r") 'fluent-recompile)
+            (define-key map (kbd "C-c c a") 'fluent-add-interactive)
+            (define-key map (kbd "C-c m m") 'fluent-modify)
+            (define-key map (kbd "C-c m s") 'fluent-switch-two-commands)
+            (define-key map (kbd "C-c m r") 'fluent-remove-command)
+
+            (define-key map (kbd "C-c r t") 'fluent-toggle-remote-compile)
+            (define-key map (kbd "C-c r b") 'fluent-set-remote-host-interative)
+            (define-key map (kbd "C-c s x") 'fluent-compile-single-command)
+            (define-key map (kbd "C-c s s") 'fluent-toggle-single-command-execution)            
+            map)
   :global t)
 
 (defvar fluent-command
@@ -139,8 +138,8 @@
 (defun fluent-message (str &rest vars)
   "Display a fluent status message."
   (message (apply #'format (concat "fluent [%s]: " str)
-		  (cons (current-time-string)
-			vars))))
+                  (cons (current-time-string)
+                        vars))))
 
 (defun fluent-add (command)
   "Add the COMMAND to the fluent execution command list."
@@ -194,7 +193,6 @@
 
 (defun fluent-set-remote-host (host)
   "Set the remote build machine to HOST"
-  (interactive)
   (setq fluent--remote-build-host host)
   (fluent-message "Remote host set to \"%s\"" host))
 
@@ -202,9 +200,9 @@
   "Prompt user for remote host and set it."
   (interactive)
   (let ((host (read-string "host: "
-			   (or (car fluent--remote-build-host-history)
-			       "localhost")
-			   'fluent--remote-build-host-history)))
+                           (or (car fluent--remote-build-host-history)
+                               "localhost")
+                           'fluent--remote-build-host-history)))
     (fluent-set-remote-host host)))
 
 (defun fluent-toggle-single-command-execution ()
@@ -228,15 +226,15 @@
     (seq-do
      (lambda (expression)
        (let* ((elisp-value
-	       (eval
-		(read
-		 (format "%s"
-			 (substring expression 1 (- (length expression) 1)))))))
+               (eval
+                (read
+                 (format "%s"
+                         (substring expression 1 (- (length expression) 1)))))))
        (setq string
-	     (replace-regexp-in-string
-	      (regexp-quote expression)
-	      elisp-value
-	      string))))
+             (replace-regexp-in-string
+              (regexp-quote expression)
+              elisp-value
+              string))))
      expressions))
   string)
 
@@ -258,9 +256,9 @@
   (setq full-command (fluent--generate-compilation-command arguments))
   (if fluent--remote-compilation
       (setq full-command
-	    (concat "ssh "
-		    fluent--remote-build-host
-		    " \"" full-command "\"")))
+            (concat "ssh "
+                    fluent--remote-build-host
+                    " \"" full-command "\"")))
   (fluent-evaluate-elisp-commands-and-replace-in-string full-command))
 
 (defun fluent--generate-compilation-command (arguments)
@@ -270,27 +268,27 @@
   (setq parsed-arguments (mapconcat 'identity (reverse arguments) " && "))
   (setq full-command-list (list prepend-command parsed-arguments))
   (setq non-empty-commands
-	(seq-remove
-	 (lambda (str) (or (eq str "") (eq str nil)))
-	 full-command-list))
+        (seq-remove
+         (lambda (str) (or (eq str "") (eq str nil)))
+         full-command-list))
   (mapconcat 'identity non-empty-commands " && "))
 
 
 (defun fluent--evaluate-pre-compilation-commands ()
   "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" to prepend to the execution."
   (mapconcat (lambda (fn) (funcall fn))
-	     (reverse fluent-prepend-compilation-commands)
-	     " && "))
+             (reverse fluent-prepend-compilation-commands)
+             " && "))
 
 (defun fluent-switch-two-commands ()
   "Select two commands from the execution list and switch them."
   (interactive)
   (let ((first-pos
-	 (seq-position fluent-command
-		       (ido-completing-read "first: " fluent-command)))
-	(second-pos
-	 (seq-position fluent-command
-		       (ido-completing-read "second: " fluent-command))))
+         (seq-position fluent-command
+                       (ido-completing-read "first: " fluent-command)))
+        (second-pos
+         (seq-position fluent-command
+                       (ido-completing-read "second: " fluent-command))))
     (cl-rotatef
      (seq-elt fluent-command first-pos)
      (seq-elt fluent-command second-pos))))
@@ -303,10 +301,10 @@
 ;;   "Give user possibility to compose a custom elisp-expression with the commands to be executed."
 ;;   (interactive)
 ;;   (let ((execution-string
-;; 	 (read-string
-;; 	  "command: "
-;; 	  (or (car fluent-commands-history) "{commands}")
-;; 	  'fluent-commands-history)))
+;;       (read-string
+;;        "command: "
+;;        (or (car fluent-commands-history) "{commands}")
+;;        'fluent-commands-history)))
 ;;     (if (string-match-p (regexp-quote "{build-host}") execution-string)
 ;;         (let ((build-server (read-string "build host: "
 ;;                                          (or (car fluent-remote-build-history) "")
@@ -342,7 +340,7 @@
 (setq-default display-buffer-reuse-frames t)
 
 (eval-when-compile
-  (load-file "test/fluent-test.el")
+  (load-file (expand-file-name "test/fluent-mode-test.el"))
   (ert "fluent"))
 
 (provide 'fluent)
