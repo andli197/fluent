@@ -220,7 +220,20 @@
         (setq pos (match-end 0)))
       matches)))
 
-(defun fluent-evaluate-elisp-commands-and-replace-in-string (string)
+(defun fluent-evaluate-elisp-expression (input)
+  "Evaluate lisp expression, either string or list as input. Results are concatinated with double ampersand."
+  (cond ((stringp input)
+         (fluent-evaluate-elisp-expression-string input))
+        ((listp input)
+         (mapconcat
+          'fluent-evaluate-elisp-expression-string
+          input
+          " && "))
+        (t (error "Invalid input to fluent-evaluate-elisp-expression: Input not a list or string"))))
+
+
+
+(defun fluent-evaluate-elisp-expression-string (string)
   "Locate all places with \"{}\" in the STRING and evaluate it as elisp and replace its value with the original value in the string"
   (let ((expressions (fluent--get-all-elisp-expressions-from-string string)))
     (seq-do
@@ -233,8 +246,9 @@
        (setq string
              (replace-regexp-in-string
               (regexp-quote expression)
-              elisp-value
-              string))))
+              (fluent-evaluate-elisp-expression elisp-value)
+              string))
+       ))
      expressions))
   string)
 
@@ -259,7 +273,7 @@
             (concat "ssh "
                     fluent--remote-build-host
                     " \"" full-command "\"")))
-  (fluent-evaluate-elisp-commands-and-replace-in-string full-command))
+  (fluent-evaluate-elisp-expression-string full-command))
 
 (defun fluent--generate-compilation-command (arguments)
   "Generates the compilation command and assign to `fluent--last-command'"
@@ -271,6 +285,7 @@
         (seq-remove
          (lambda (str) (or (eq str "") (eq str nil)))
          full-command-list))
+  (fluent-message "non-empty commands %s" non-empty-commands)
   (mapconcat 'identity non-empty-commands " && "))
 
 
@@ -293,30 +308,19 @@
      (seq-elt fluent-command first-pos)
      (seq-elt fluent-command second-pos))))
 
-;; (defvar fluent-commands-history '())
-;; (add-to-list 'fluent-commands-history "ssh {build-host} \"{commands}\"")
+(defvar fluent-compile-custom-history
+  '("{fluent-command}")
+  "History for the custom compilation")
+(add-to-list 'fluent-compile-custom-history "{fluent-command}")
 
-;; (defvar fluent-remote-build-history '())
-;; (defun fluent-execute ()
-;;   "Give user possibility to compose a custom elisp-expression with the commands to be executed."
-;;   (interactive)
-;;   (let ((execution-string
-;;       (read-string
-;;        "command: "
-;;        (or (car fluent-commands-history) "{commands}")
-;;        'fluent-commands-history)))
-;;     (if (string-match-p (regexp-quote "{build-host}") execution-string)
-;;         (let ((build-server (read-string "build host: "
-;;                                          (or (car fluent-remote-build-history) "")
-;;                                          'fluent-remote-build-history)))
-;;           (setq execution-string
-;;                 (replace-regexp-in-string (regexp-quote "{build-host}") build-server execution-string))))
-    
-;;     (setq command (replace-regexp-in-string
-;;                    (regexp-quote "{commands}")
-;;                    (mapconcat (lambda (item) item) (reverse fluent-command) " && ")
-;;                    execution-string))
-;;     (fluent-compile-and-log command)))
+(defun fluent-compile-custom ()
+  "Give user possibility to compose a custom elisp-expression with the command to be executed. The commands in fluent is available in 'fluent-command. This means that the remote execution could be build in this command as 'ssh {fluent--remote-build-host} \"{fluent-command}\"'"
+  (interactive)
+  (let ((custom-command
+         (read-string "command: "
+                      (car fluent-compile-custom-history)
+                      'fluent-compile-custom-history)))
+    (fluent--compile-and-log (list custom-command))))
 
 (defun fluent-recompile ()
   "Invoke the remopilation."
@@ -343,5 +347,5 @@
   (load-file (expand-file-name "test/fluent-mode-test.el"))
   (ert "fluent"))
 
-(provide 'fluent)
-;;; fluent ends here
+(provide 'fluent-mode)
+;;; fluent-mode.el ends here

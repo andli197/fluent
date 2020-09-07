@@ -16,6 +16,7 @@
         fluent--remote-build-host '()
         fluent-prepend-compilation-commands '()
         fluent--single-command-execution '()
+        fluent-compile-custom-history '()
         ))
 
 (ert-deftest fluent-add--can-add-custom-command-to-execution-list ()
@@ -117,35 +118,40 @@
      '("{bar}" "{foo}"))
     '())))
 
-(setq test-variable "variable value")
-(defun test-function () "function value")
 
-(ert-deftest fluent-evaluate-elisp-commands-and-replace-in-string ()
+(ert-deftest fluent-evaluate-elisp-expression-string ()
   (fluent--default-reset)
   (should
-   (equal (fluent-evaluate-elisp-commands-and-replace-in-string "")
+   (equal (fluent-evaluate-elisp-expression-string "")
           ""))
   (should
-   (equal (fluent-evaluate-elisp-commands-and-replace-in-string "foobar")
+   (equal (fluent-evaluate-elisp-expression-string "foobar")
           "foobar"))
+  (setq test-variable "variable value")
+  (defun test-function () "function value")
   (should
    (equal
-    (fluent-evaluate-elisp-commands-and-replace-in-string "{test-variable}")
+    (fluent-evaluate-elisp-expression-string "{test-variable}")
     "variable value"))
   (should
    (equal
-    (fluent-evaluate-elisp-commands-and-replace-in-string "{(test-function)}")
+    (fluent-evaluate-elisp-expression-string "{(test-function)}")
     "function value"))
   (should
    (equal
-    (fluent-evaluate-elisp-commands-and-replace-in-string
+    (fluent-evaluate-elisp-expression-string
      "{(test-function)} and {test-variable}")
     "function value and variable value"))
   (should
    (equal
-    (fluent-evaluate-elisp-commands-and-replace-in-string
+    (fluent-evaluate-elisp-expression-string
      "{(string-join (list (test-function) test-variable) \", \")}")
     "function value, variable value"))
+  (setq test-var '("foo" "bar"))
+  (should
+   (equal
+    (fluent-evaluate-elisp-expression-string "{test-var}")
+    "foo && bar"))
   )
 
 (defvar test-tmp "first")
@@ -183,6 +189,30 @@
   (fluent--default-reset)
   (fluent-toggle-single-command-execution)
   (should (equal fluent--single-command-execution t)))
+
+(ert-deftest fluent-evaluate-elisp-expression-tests ()
+  (fluent--default-reset)
+  (should (equal (fluent-evaluate-elisp-expression "") ""))
+  (should (equal (fluent-evaluate-elisp-expression "command") "command"))
+  (setq test-var "test value")
+  (should (equal (fluent-evaluate-elisp-expression "{test-var}") "test value"))
+  (should (equal (fluent-evaluate-elisp-expression '("command")) "command"))
+  (should (equal
+           (fluent-evaluate-elisp-expression '("{test-var}"))
+           "test value"))
+  (should (equal
+           (fluent-evaluate-elisp-expression '("{test-var}" "{test-var}"))
+           "test value && test value"))
+  (setq test-var '("foo" "bar"))
+  (should (equal
+           (fluent-evaluate-elisp-expression "{test-var}")
+           "foo && bar"))
+  (setq test-var1 "value1")
+  (setq test-var2 "{test-var1}")
+  (should (equal
+           (fluent-evaluate-elisp-expression "{test-var2}")
+           "value1"))
+  )
 
 (provide 'fluent-test)
 ;;; fluent-test ends here
