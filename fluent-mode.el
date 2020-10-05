@@ -135,6 +135,14 @@
   '()
   "Functions to call and append result from to the current `fluent-command'")
 
+(defvar fluent-compilation-buffer-name
+  "*fluent-compilation*"
+  "Name of the compilation buffer to use for fluent")
+
+(defvar fluent-single-compilation-mode
+  t
+  "If set to '(), multiple ongoing compilations will be allowed, using the `fluent-compilation-buffer-name' as base for the created buffers")
+
 (defun fluent-message (str &rest vars)
   "Display a fluent status message."
   (message (apply #'format (concat "fluent [%s]: " str)
@@ -258,12 +266,32 @@
   (let ((selected-command (ido-completing-read "execute: " fluent-command)))
     (fluent--compile-and-log (list selected-command))))
 
+
+(defun rename-that-buffer (buffer-or-name new-name &optional guarantee-name)
+  "Rename the buffer or name to the new-name. Does not affect the current buffer."
+  (let ((cbuf (get-buffer (buffer-name)))
+        (new-buffer-name (generate-new-buffer-name new-name)))
+    (if (and guarantee-name (not (string-equal new-buffer-name new-name)))
+        (progn
+          (kill-buffer new-name)
+          (setq new-buffer-name new-name)))
+    (if (get-buffer buffer-or-name)
+        (progn
+          (set-buffer buffer-or-name)
+          (rename-buffer new-buffer-name)
+          (set-buffer cbuf)
+          new-buffer-name)
+      nil)))
+
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
   (setq full-command (fluent--generate-full-compilation-command arguments))
   (fluent-message "compiling '%s'" full-command)
-  (setq compilation-always-kill t)
-  (compile full-command))
+  (let ((current-compilation-buffer (rename-that-buffer "*compilation*" "tmp")))
+    (compile full-command)
+    (rename-that-buffer "*compilation*" "*fluent-compilation*" fluent-single-compilation-mode)
+    (if current-compilation-buffer
+        (rename-that-buffer current-compilation-buffer "*compilation*"))))
 
 (defun fluent--generate-full-compilation-command (arguments)
   "Generates the full compilation command with remote host."
@@ -343,9 +371,9 @@
 (fluent--set-compile-flags)
 (setq-default display-buffer-reuse-frames t)
 
-(eval-when-compile
-  (load-file (expand-file-name "test/fluent-mode-test.el"))
-  (ert "fluent"))
+;; (eval-when-compile
+;;   (load-file (expand-file-name "./test/fluent-mode-test.el"))
+;;   (ert "fluent"))
 
 (provide 'fluent-mode)
 ;;; fluent-mode.el ends here
