@@ -70,6 +70,11 @@
 (require 'cl-lib)
 (require 'compile)
 
+(defgroup fluent-mode '()
+  "fluent execution mode"
+  :group 'tools
+  :tag "fluent mode")
+
 ;;;###autoload
 (define-minor-mode fluent-mode
   "Minor mode for fluent execution model."
@@ -97,7 +102,33 @@
             (define-key map (kbd "C-c C-f s x") 'fluent-compile-single-command)
             (define-key map (kbd "C-c C-f s s") 'fluent-toggle-single-command-execution)            
             map)
-  :global t)
+  :global t
+  :group 'fluent-mode)
+
+
+(defcustom fluent--remote-build-host
+  "localhost"
+  "Machine for remote compilation."
+  :type 'string
+  :group 'fluent-mode)
+
+(defcustom fluent--single-command-execution
+  '()
+  "Flag for executing command direct or not."
+  :type 'boolean
+  :group 'fluent-mode)
+
+(defcustom fluent-compilation-buffer-name
+  "*fluent-compilation*"
+  "Name of the compilation buffer to use for fluent"
+  :type 'string
+  :group 'fluent-mode)
+
+(defcustom fluent-single-compilation-mode
+  t
+  "If set to '(), multiple ongoing compilations will be allowed, using the `fluent-compilation-buffer-name' as base for the created buffers"
+  :type 'boolean
+  :group 'fluent-mode)
 
 (defvar fluent-command
   '()
@@ -111,17 +142,9 @@
   '()
   "Flag for compiling remote or local.")
 
-(defvar fluent--remote-build-host
-  "localhost"
-  "Machine for remote compilation.")
-
 (defvar fluent--remote-build-host-history
   '()
   "History for the build hosts.")
-
-(defvar fluent--single-command-execution
-  '()
-  "Flag for executing command direct or not.")
 
 (defvar fluent--lisp-expression-finder-regexp
   "{\\(.+?\\)}"
@@ -135,13 +158,9 @@
   '()
   "Functions to call and append result from to the current `fluent-command'")
 
-(defvar fluent-compilation-buffer-name
-  "*fluent-compilation*"
-  "Name of the compilation buffer to use for fluent")
-
-(defvar fluent-single-compilation-mode
-  t
-  "If set to '(), multiple ongoing compilations will be allowed, using the `fluent-compilation-buffer-name' as base for the created buffers")
+(defvar fluent-compile-custom-history
+  '("{fluent-command}")
+  "History for the custom compilation")
 
 (defun fluent-message (str &rest vars)
   "Display a fluent status message."
@@ -163,7 +182,7 @@
   (let ((command (read-string "command: " (or (car fluent-add-interactive-history) "") 'fluent-add-interactive-history)))
     (fluent-add command)))
 
-(defun fluent-completing-read (prompt choices &optional _predicate require-match
+(defun fluent-completing-read (prompt choises &optional _predicate require-match
                                       initial-input hist def _inherit-input-method)
   (ido-completing-read prompt choises _predicate require-match initial-input hist def _inherit-input-method))
 
@@ -271,11 +290,11 @@
     (fluent--compile-and-log (list selected-command))))
 
 
-(defun rename-that-buffer (buffer-or-name new-name &optional guarantee-name)
+(defun rename-that-buffer (buffer-or-name new-name &optional kill-pre-existing-buffer)
   "Rename the buffer or name to the new-name. Does not affect the current buffer."
   (let ((cbuf (get-buffer (buffer-name)))
         (new-buffer-name (generate-new-buffer-name new-name)))
-    (if (and guarantee-name (not (string-equal new-buffer-name new-name)))
+    (if (and kill-pre-existing-buffer (not (string-equal new-buffer-name new-name)))
         (progn
           (kill-buffer new-name)
           (setq new-buffer-name new-name)))
@@ -291,11 +310,11 @@
   "Run compile on the given ARGUMENTS fluent commands."
   (setq full-command (fluent--generate-full-compilation-command arguments))
   (fluent-message "compiling '%s'" full-command)
-  (let ((current-compilation-buffer (rename-that-buffer "*compilation*" "tmp")))
+  (let ((pre-existing-compilation-buffer (rename-that-buffer "*compilation*" "tmp")))
     (compile full-command)
     (rename-that-buffer "*compilation*" "*fluent-compilation*" fluent-single-compilation-mode)
-    (if current-compilation-buffer
-        (rename-that-buffer current-compilation-buffer "*compilation*"))))
+    (if pre-existing-compilation-buffer
+        (rename-that-buffer pre-existing-compilation-buffer "*compilation*"))))
 
 (defun fluent--generate-full-compilation-command (arguments)
   "Generates the full compilation command with remote host."
@@ -340,11 +359,6 @@
      (seq-elt fluent-command first-pos)
      (seq-elt fluent-command second-pos))))
 
-(defvar fluent-compile-custom-history
-  '("{fluent-command}")
-  "History for the custom compilation")
-(add-to-list 'fluent-compile-custom-history "{fluent-command}")
-
 (defun fluent-compile-custom ()
   "Give user possibility to compose a custom elisp-expression with the command to be executed. The commands in fluent is available in 'fluent-command. This means that the remote execution could be build in this command as 'ssh {fluent--remote-build-host} \"{fluent-command}\"'"
   (interactive)
@@ -357,14 +371,7 @@
 (defun fluent-recompile ()
   "Invoke the remopilation."
   (interactive)
-  (fluent--set-compile-flags)
   (fluent--compile-and-log fluent--last-command))
-
-(defun fluent--set-compile-flags ()
-  "Set the compilation flags to the desired behavior."
-  (setq compilation-always-kill t
-        compilation-scroll-output t
-        compilation-auto-jump-to-first-error '()))
 
 (defun fluent-colorize-compilation-buffer ()
   (read-only-mode '())
@@ -372,7 +379,9 @@
   (read-only-mode t))
 (add-hook 'compilation-filter-hook 'fluent-colorize-compilation-buffer)
 
-(fluent--set-compile-flags)
+(setq compilation-always-kill t
+      compilation-scroll-output t
+      compilation-auto-jump-to-first-error '())
 (setq-default display-buffer-reuse-frames t)
 
 ;; (eval-when-compile
