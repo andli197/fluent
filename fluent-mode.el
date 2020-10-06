@@ -163,10 +163,14 @@
   (let ((command (read-string "command: " (or (car fluent-add-interactive-history) "") 'fluent-add-interactive-history)))
     (fluent-add command)))
 
+(defun fluent-completing-read (prompt choices &optional _predicate require-match
+                                      initial-input hist def _inherit-input-method)
+  (ido-completing-read prompt choises _predicate require-match initial-input hist def _inherit-input-method))
+
 (defun fluent-remove-command ()
   "Select a command from the execution list and remove it."
   (interactive)
-  (let ((selected-command (ido-completing-read "remove: " fluent-command)))
+  (let ((selected-command (fluent-completing-read "remove: " fluent-command '() t)))
     (setq fluent-command (remove selected-command fluent-command))))
 
 (defun fluent-clear ()
@@ -178,7 +182,7 @@
 (defun fluent-modify ()
   "Select command in `fluent-command' and modify it."
   (interactive)
-  (let* ((selected-command (ido-completing-read "modify: " fluent-command))
+  (let* ((selected-command (fluent-completing-read "modify: " fluent-command '() t))
          (new-command (read-string "modification: " selected-command)))
     (setcar
      (nthcdr
@@ -263,7 +267,7 @@
 (defun fluent-compile-single-command ()
   "Prompt user for command in command list and execute it."
   (interactive)
-  (let ((selected-command (ido-completing-read "execute: " fluent-command)))
+  (let ((selected-command (fluent-completing-read "execute: " fluent-command '() t)))
     (fluent--compile-and-log (list selected-command))))
 
 
@@ -328,10 +332,10 @@
   (interactive)
   (let ((first-pos
          (seq-position fluent-command
-                       (ido-completing-read "first: " fluent-command)))
+                       (fluent-completing-read "first: " fluent-command '() t)))
         (second-pos
          (seq-position fluent-command
-                       (ido-completing-read "second: " fluent-command))))
+                       (fluent-completing-read "second: " fluent-command '() t))))
     (cl-rotatef
      (seq-elt fluent-command first-pos)
      (seq-elt fluent-command second-pos))))
