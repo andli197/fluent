@@ -321,7 +321,10 @@
   (let ((pre-existing-compilation-buffer
          (rename-that-buffer "*compilation*" "tmp")))
     (compile full-command)
-    (rename-that-buffer "*compilation*" "*fluent-compilation*" fluent-single-compilation-mode)
+    (rename-that-buffer
+     "*compilation*"
+     fluent-compilation-buffer-name
+     fluent-single-compilation-mode)
     (if pre-existing-compilation-buffer
         (rename-that-buffer pre-existing-compilation-buffer "*compilation*"))))
 
