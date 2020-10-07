@@ -176,10 +176,16 @@
       (fluent-message "command \"%s\" added to execution list." command)
       (push command fluent-command))))
 
+(defun read-string-default-first-in-history (prompt history)
+  "Read string with history and use the first value for default value."
+  (read-string prompt (car (eval history)) history))
+
 (defun fluent-add-interactive ()
   "Prompts for a command to appent to the execution list."
   (interactive)
-  (let ((command (read-string "command: " (or (car fluent-add-interactive-history) "") 'fluent-add-interactive-history)))
+  (let ((command (read-string-default-first-in-history
+                  "command: "
+                  'fluent-add-interactive-history)))
     (fluent-add command)))
 
 (defun fluent-completing-read (prompt choises &optional _predicate require-match
@@ -201,8 +207,10 @@
 (defun fluent-modify ()
   "Select command in `fluent-command' and modify it."
   (interactive)
-  (let* ((selected-command (fluent-completing-read "modify: " fluent-command '() t))
-         (new-command (read-string "modification: " selected-command)))
+  (let* ((selected-command
+          (fluent-completing-read "modify: " fluent-command '() t))
+         (new-command
+          (read-string "modification: " selected-command)))
     (setcar
      (nthcdr
       (seq-position fluent-command selected-command)
@@ -230,10 +238,9 @@
 (defun fluent-set-remote-host-interative ()
   "Prompt user for remote host and set it."
   (interactive)
-  (let ((host (read-string "host: "
-                           (or (car fluent--remote-build-host-history)
-                               "localhost")
-                           'fluent--remote-build-host-history)))
+  (let ((host (read-string-default-first-in-history
+               "host: "
+               'fluent--remote-build-host-history)))
     (fluent-set-remote-host host)))
 
 (defun fluent-toggle-single-command-execution ()
@@ -363,9 +370,9 @@
   "Give user possibility to compose a custom elisp-expression with the command to be executed. The commands in fluent is available in 'fluent-command. This means that the remote execution could be build in this command as 'ssh {fluent--remote-build-host} \"{fluent-command}\"'"
   (interactive)
   (let ((custom-command
-         (read-string "command: "
-                      (car fluent-compile-custom-history)
-                      'fluent-compile-custom-history)))
+         (read-string-default-first-in-history
+          "command: "
+          'fluent-compile-custom-history)))
     (fluent--compile-and-log (list custom-command))))
 
 (defun fluent-recompile ()
