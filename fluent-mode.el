@@ -99,8 +99,8 @@
 
             (define-key map (kbd "C-c C-f r t") 'fluent-toggle-remote-compile)
             (define-key map (kbd "C-c C-f r b") 'fluent-set-remote-host-interative)
-            (define-key map (kbd "C-c C-f s x") 'fluent-compile-single-command)
-            (define-key map (kbd "C-c C-f s s") 'fluent-toggle-single-command-execution)            
+            (define-key map (kbd "C-c C-f x s") 'fluent-compile-single-command)
+            (define-key map (kbd "C-c C-f x t") 'fluent-toggle-single-command-execution)            
             map)
   :global t
   :group 'fluent-mode)
