@@ -301,7 +301,8 @@
   "Rename the buffer or name to the new-name. Does not affect the current buffer."
   (let ((cbuf (get-buffer (buffer-name)))
         (new-buffer-name (generate-new-buffer-name new-name)))
-    (if (and kill-pre-existing-buffer (not (string-equal new-buffer-name new-name)))
+    (if (and kill-pre-existing-buffer
+             (not (string-equal new-buffer-name new-name)))
         (progn
           (kill-buffer new-name)
           (setq new-buffer-name new-name)))
@@ -317,7 +318,8 @@
   "Run compile on the given ARGUMENTS fluent commands."
   (setq full-command (fluent--generate-full-compilation-command arguments))
   (fluent-message "compiling '%s'" full-command)
-  (let ((pre-existing-compilation-buffer (rename-that-buffer "*compilation*" "tmp")))
+  (let ((pre-existing-compilation-buffer
+         (rename-that-buffer "*compilation*" "tmp")))
     (compile full-command)
     (rename-that-buffer "*compilation*" "*fluent-compilation*" fluent-single-compilation-mode)
     (if pre-existing-compilation-buffer
