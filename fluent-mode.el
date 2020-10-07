@@ -313,14 +313,13 @@
 
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
-  (setq full-command (fluent--generate-full-compilation-command arguments))
-  (fluent-message "compiling '%s'" full-command)
-  (let ((pre-existing-compilation-buffer
+  (let ((full-command (fluent--generate-full-compilation-command arguments))
+        (pre-existing-compilation-buffer
          (rename-that-buffer "*compilation*" "tmp")))
+    (fluent-message "compiling: '%s'" full-command)    
     (compile full-command)
     (rename-that-buffer
-     "*compilation*"
-     fluent-compilation-buffer-name
+     "*compilation*" fluent-compilation-buffer-name
      fluent-single-compilation-mode)
     (if pre-existing-compilation-buffer
         (rename-that-buffer pre-existing-compilation-buffer "*compilation*"))))
@@ -338,15 +337,14 @@
 (defun fluent--generate-compilation-command (arguments)
   "Generates the compilation command and assign to `fluent--last-command'"
   (setq fluent--last-command arguments)
-  (setq prepend-command (fluent--evaluate-pre-compilation-commands))
-  (setq parsed-arguments (mapconcat 'identity (reverse arguments) " && "))
-  (setq full-command-list (list prepend-command parsed-arguments))
-  (setq non-empty-commands
-        (seq-remove
-         (lambda (str) (or (eq str "") (eq str nil)))
-         full-command-list))
-  (fluent-message "non-empty commands %s" non-empty-commands)
-  (mapconcat 'identity non-empty-commands " && "))
+  (let ((prepend-command (fluent--evaluate-pre-compilation-commands))
+        (parsed-arguments (mapconcat 'identity (reverse arguments) " && "))
+        (full-command-list (list prepend-command parsed-arguments))
+        (non-empty-commands (seq-remove
+                             (lambda (str) (or (eq str "") (eq str nil)))
+                             full-command-list)))
+    (fluent-message "non-empty commands %s" non-empty-commands)
+    (mapconcat 'identity non-empty-commands " && ")))
 
 
 (defun fluent--evaluate-pre-compilation-commands ()
