@@ -188,14 +188,16 @@
                   'fluent-add-interactive-history)))
     (fluent-add command)))
 
-(defun fluent-completing-read (prompt choises &optional _predicate require-match
-                                      initial-input hist def _inherit-input-method)
-  (ido-completing-read prompt choises _predicate require-match initial-input hist def _inherit-input-method))
+(defun fluent-completing-read (prompt choises)
+  "Completing read with requirement on selecting match to the items."
+  (let ((require-match t)
+        (predicate '()))
+    (ido-completing-read prompt choises predicate require-match)))
 
 (defun fluent-remove-command ()
   "Select a command from the execution list and remove it."
   (interactive)
-  (let ((selected-command (fluent-completing-read "remove: " fluent-command '() t)))
+  (let ((selected-command (fluent-completing-read "remove: " fluent-command)))
     (setq fluent-command (remove selected-command fluent-command))))
 
 (defun fluent-clear ()
@@ -208,7 +210,7 @@
   "Select command in `fluent-command' and modify it."
   (interactive)
   (let* ((selected-command
-          (fluent-completing-read "modify: " fluent-command '() t))
+          (fluent-completing-read "modify: " fluent-command))
          (new-command
           (read-string "modification: " selected-command)))
     (setcar
@@ -293,7 +295,7 @@
 (defun fluent-compile-single-command ()
   "Prompt user for command in command list and execute it."
   (interactive)
-  (let ((selected-command (fluent-completing-read "execute: " fluent-command '() t)))
+  (let ((selected-command (fluent-completing-read "execute: " fluent-command)))
     (fluent--compile-and-log (list selected-command))))
 
 
@@ -362,11 +364,11 @@
   "Select two commands from the execution list and switch them."
   (interactive)
   (let ((first-pos
-         (seq-position fluent-command
-                       (fluent-completing-read "first: " fluent-command '() t)))
+         (seq-position
+          fluent-command (fluent-completing-read "first: " fluent-command)))
         (second-pos
-         (seq-position fluent-command
-                       (fluent-completing-read "second: " fluent-command '() t))))
+         (seq-position
+          fluent-command (fluent-completing-read "second: " fluent-command))))
     (cl-rotatef
      (seq-elt fluent-command first-pos)
      (seq-elt fluent-command second-pos))))
