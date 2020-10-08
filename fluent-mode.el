@@ -12,10 +12,9 @@
 ;; Small tool for executing compile on a list of commands
 
 ;; ## Usage
-;; Add commands using 'fluent-add or 'fluent-add-interactive and call
-;; 'fluent-compile for compiling the current list of commands in 'compile,
-;; stacked with double ampersands. The commands are executed in the order
-;; they were added. 
+;; Add commands using 'fluent-add and call 'fluent-compile for compiling
+;; the current list of commands in 'compile, stacked with double ampersands.
+;; The commands are executed in the order they were added. 
 ;; for instance:
 ;; (fluent-add "cmake --build . --target all")
 ;; (fluent-add "ctest -j8")
@@ -31,9 +30,9 @@
 
 ;; It is possible to add hooks to functions to call generating strings to
 ;; be appended before the compilation, adding callbacks to
-;; 'fluent-prepend-compilations-commands. Adding:
-;; (push "whoami" 'fluent-prepend-compilations-commands)
-;; (push "uptime" 'fluent-prepend-compilations-commands)
+;; 'fluent-prepend-compilation-commands. Adding:
+;; (push "whoami" 'fluent-prepend-compilation-commands)
+;; (push "uptime" 'fluent-prepend-compilation-commands)
 ;; would result in the command "whoami && uptime" would be prepended to
 ;; the full compilation string. Useful if working in an environment
 ;; using modules for instance.
@@ -80,25 +79,16 @@
   "Minor mode for fluent execution model."
   :lighter " fluent"
   :keymap (let ((map (make-sparse-keymap)))
-            ;;; IDE-style keybindings
-            ;; (define-key map (kbd "<f5>") 'fluent-compile)
-            ;; (define-key map (kbd "C-<f5>") 'fluent-recompile)
-            ;; (define-key map (kbd "<f6>") 'fluent-add-interactive)
-            ;; (define-key map (kbd "C-<f6>") 'fluent-switch-two-commands)
-            ;; (define-key map (kbd "<f7>") 'fluent-modify)
-            ;; (define-key map (kbd "C-<f7>") 'fluent-remove-command)
-            ;; (define-key map (kbd "<f8>") 'fluent-clear)
-
             (define-key map (kbd "C-c C-f c x") 'fluent-clear)
             (define-key map (kbd "C-c C-f c c") 'fluent-compile)
             (define-key map (kbd "C-c C-f c r") 'fluent-recompile)
-            (define-key map (kbd "C-c C-f m a") 'fluent-add-interactive)
+            (define-key map (kbd "C-c C-f m a") 'fluent-add)
             (define-key map (kbd "C-c C-f m m") 'fluent-modify)
             (define-key map (kbd "C-c C-f m s") 'fluent-switch-two-commands)
             (define-key map (kbd "C-c C-f m x") 'fluent-remove-command)
 
             (define-key map (kbd "C-c C-f r t") 'fluent-toggle-remote-compile)
-            (define-key map (kbd "C-c C-f r b") 'fluent-set-remote-host-interative)
+            (define-key map (kbd "C-c C-f r b") 'fluent-set-remote-host)
             (define-key map (kbd "C-c C-f x s") 'fluent-compile-single-command)
             (define-key map (kbd "C-c C-f x t") 'fluent-toggle-single-command-execution)            
             map)
@@ -156,11 +146,12 @@
 
 (defvar fluent-prepend-compilation-commands
   '()
-  "Functions to call and append result from to the current `fluent-command'")
+  "Functions to call and append result from to the current `fluent-command'.")
 
 (defvar fluent-compile-custom-history
   '("{fluent-command}")
-  "History for the custom compilation")
+  "History for the custom compilation. 
+The default value is the current `fluent-command'.")
 
 (defun fluent-message (str &rest vars)
   "Display a fluent status message."
@@ -170,6 +161,9 @@
 
 (defun fluent-add (command)
   "Add the COMMAND to the fluent execution command list."
+  (interactive
+   (let ((command (read-string-default-first-in-history "command: " 'fluent-add-interactive-history)))
+     (list command)))
   (if fluent--single-command-execution
       (fluent--compile-and-log (list command))
     (progn
@@ -179,14 +173,6 @@
 (defun read-string-default-first-in-history (prompt history)
   "Read string with history and use the first value for default value."
   (read-string prompt (car (eval history)) history))
-
-(defun fluent-add-interactive ()
-  "Prompts for a command to appent to the execution list."
-  (interactive)
-  (let ((command (read-string-default-first-in-history
-                  "command: "
-                  'fluent-add-interactive-history)))
-    (fluent-add command)))
 
 (defun fluent-completing-read (prompt choises)
   "Completing read with requirement on selecting match to the items."
@@ -229,23 +215,18 @@
 
 (defun fluent-set-remote-host (host)
   "Set the remote build machine to HOST"
+  (interactive
+   (let ((host (read-string-default-first-in-history "host: " 'fluent--remote-build-host-history)))
+     (list host)))
   (setq fluent--remote-build-host host)
   (fluent-message "Remote host set to \"%s\"" host))
-
-(defun fluent-set-remote-host-interative ()
-  "Prompt user for remote host and set it."
-  (interactive)
-  (let ((host (read-string-default-first-in-history
-               "host: "
-               'fluent--remote-build-host-history)))
-    (fluent-set-remote-host host)))
 
 (defun fluent-toggle-single-command-execution ()
   "Switch between single command execution and building full command before execution."
   (interactive)
   (setq fluent--single-command-execution (not fluent--single-command-execution))
-  (setq status (if fluent--single-command-execution "ON" "OFF"))
-  (fluent-message "Turning single command execution %s" status))
+  (let ((status (if fluent--single-command-execution "ON" "OFF")))
+    (fluent-message "Turning single command execution %s" status)))
 
 (defun fluent--get-all-elisp-expressions-from-string (command)
   (save-match-data
@@ -260,11 +241,10 @@
   (cond ((stringp input)
          (fluent-evaluate-elisp-expression-string input))
         ((listp input)
-         (mapconcat
-          'fluent-evaluate-elisp-expression-string
-          input
-          " && "))
-        (t (error "Invalid input to fluent-evaluate-elisp-expression: Input not a list or string"))))
+         (mapconcat 'fluent-evaluate-elisp-expression-string input " && "))
+        (t
+         (error
+          "Invalid input to fluent-evaluate-elisp-expression: Input not a list or string"))))
 
 
 
@@ -316,7 +296,7 @@
   (let ((full-command (fluent--generate-full-compilation-command arguments))
         (pre-existing-compilation-buffer
          (rename-that-buffer "*compilation*" "tmp")))
-    (fluent-message "compiling: '%s'" full-command)    
+    (fluent-message "compiling: '%s'" full-command)
     (compile full-command)
     (rename-that-buffer
      "*compilation*" fluent-compilation-buffer-name
@@ -337,21 +317,12 @@
 (defun fluent--generate-compilation-command (arguments)
   "Generates the compilation command and assign to `fluent--last-command'"
   (setq fluent--last-command arguments)
-  (let ((prepend-command (fluent--evaluate-pre-compilation-commands))
-        (parsed-arguments (mapconcat 'identity (reverse arguments) " && "))
-        (full-command-list (list prepend-command parsed-arguments))
-        (non-empty-commands (seq-remove
-                             (lambda (str) (or (eq str "") (eq str nil)))
-                             full-command-list)))
-    (fluent-message "non-empty commands %s" non-empty-commands)
-    (mapconcat 'identity non-empty-commands " && ")))
-
-
-(defun fluent--evaluate-pre-compilation-commands ()
-  "Evaluates the commands in `fluent-prepend-compilation-commands' and concatinates them with \"&&\" to prepend to the execution."
-  (mapconcat (lambda (fn) (funcall fn))
-             (reverse fluent-prepend-compilation-commands)
-             " && "))
+  (let* ((prepend-command
+          (seq-map (lambda (fn) (funcall fn))
+                   (reverse fluent-prepend-compilation-commands)))
+         (full-command-list
+          (seq-concatenate 'list prepend-command (reverse arguments))))
+    (mapconcat 'identity full-command-list " && ")))
 
 (defun fluent-switch-two-commands ()
   "Select two commands from the execution list and switch them."
