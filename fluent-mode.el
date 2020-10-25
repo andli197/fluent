@@ -293,19 +293,20 @@ The default value is the current `fluent-command'.")
 
 (defun fluent--compile-and-log (arguments)
   "Run compile on the given ARGUMENTS fluent commands."
-  (let ((full-command (fluent--generate-full-compilation-command arguments))
-        (pre-existing-compilation-buffer
-         (rename-that-buffer "*compilation*" "tmp")))
+  (let* ((full-command (fluent--generate-full-compilation-command arguments))
+         (compilation-buffer-name "*compilation*")
+         (pre-existing-compilation-buffer
+          (rename-that-buffer compilation-buffer-name "tmp")))
     (fluent-message "compiling: '%s'" full-command)
     (if fluent-single-compilation-mode
-        (rename-that-buffer fluent-compilation-buffer-name "*compilation*"))
+        (rename-that-buffer fluent-compilation-buffer-name
+                            compilation-buffer-name))
     (compile full-command)
-    (rename-that-buffer
-     "*compilation*"
-     fluent-compilation-buffer-name
-     fluent-single-compilation-mode)
+    (rename-that-buffer compilation-buffer-name fluent-compilation-buffer-name
+                        fluent-single-compilation-mode)
     (if pre-existing-compilation-buffer
-        (rename-that-buffer pre-existing-compilation-buffer "*compilation*"))))
+        (rename-that-buffer pre-existing-compilation-buffer
+                            compilation-buffer-name))))
 
 (defun fluent--generate-full-compilation-command (arguments)
   "Generates the full compilation command with remote host."
