@@ -297,10 +297,12 @@ The default value is the current `fluent-command'.")
         (pre-existing-compilation-buffer
          (rename-that-buffer "*compilation*" "tmp")))
     (fluent-message "compiling: '%s'" full-command)
-    (rename-that-buffer fluent-compilation-buffer-name "*compilation*")
+    (if fluent-single-compilation-mode
+        (rename-that-buffer fluent-compilation-buffer-name "*compilation*"))
     (compile full-command)
     (rename-that-buffer
-     "*compilation*" fluent-compilation-buffer-name
+     "*compilation*"
+     fluent-compilation-buffer-name
      fluent-single-compilation-mode)
     (if pre-existing-compilation-buffer
         (rename-that-buffer pre-existing-compilation-buffer "*compilation*"))))
